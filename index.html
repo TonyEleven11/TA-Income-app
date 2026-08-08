@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Increase Income</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --bg-card:#171a21;
+    --bg-card-2:#1d2129;
+    --accent:#5fb3a3;
+    --accent-2:#e8b34f;
+    --text:#f2f3f5;
+    --text-dim:#9aa1ac;
+    --danger:#c9736b;
+    --radius:18px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{
+    height:var(--app-height, 100vh);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  #content{
+    flex:1 1 auto;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .screen{display:none; padding:calc(12px + env(safe-area-inset-top)) 20px 32px; max-width:520px; margin:0 auto;}
+  .screen.active{display:block;}
+  #view-income{padding-top:12px;}
+  h1,h2,h3{margin:0 0 8px;}
+  p{line-height:1.5;}
+  .muted{color:var(--text-dim);}
+
+  /* Top bar */
+  .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .icon-btn{background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;padding:6px;}
+  .icon-btn:active{color:var(--text);}
+
+  /* Hero */
+  .hero{text-align:center; margin:6px 0 16px;}
+  .hero .eyebrow{color:var(--accent);letter-spacing:.08em;text-transform:uppercase;font-size:11px;font-weight:600;}
+  .hero h1{font-size:25px; font-weight:700; margin-top:4px;}
+  .hero .sub{color:var(--text-dim); font-size:13px; margin-top:5px;}
+
+  .points-ring{
+    width:158px;height:158px;border-radius:50%;
+    margin:8px auto 4px;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    background:conic-gradient(var(--accent) calc(var(--pct,0)*1%), #262b34 0);
+    position:relative;
+  }
+  .points-ring::before{
+    content:"";position:absolute;inset:9px;border-radius:50%;background:var(--bg);
+  }
+  .points-ring .num{font-size:30px;font-weight:800;z-index:1;}
+  .points-ring .lbl{font-size:11px;color:var(--text-dim);z-index:1;text-transform:uppercase;letter-spacing:.06em;}
+
+  .week-banner{
+    background:var(--bg-card); border-radius:14px; padding:10px 14px;
+    text-align:center; font-size:13px; line-height:1.4; margin:14px 0 16px;
+  }
+  .week-banner .highlight{color:var(--accent); font-weight:700;}
+
+  /* Stat cards */
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0;}
+  .stat-card{background:var(--bg-card); border-radius:var(--radius); padding:13px;}
+  .stat-card .val{font-size:19px;font-weight:700;}
+  .stat-card .lbl{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+  /* Buttons */
+  .btn{
+    display:block; width:100%; text-align:center;
+    padding:16px; border-radius:14px; border:none;
+    font-size:15px; font-weight:600; cursor:pointer;
+    margin-bottom:12px;
+  }
+  .btn-primary{background:var(--accent); color:#08201b;}
+  .btn-secondary{background:var(--bg-card); color:var(--text);}
+  .btn-outline{background:transparent; color:var(--text); border:1px solid #333846;}
+  .btn-danger{background:var(--danger); color:#2a0f0c;}
+  .btn:active{opacity:.8;}
+
+  .card{background:var(--bg-card); border-radius:var(--radius); padding:16px; margin-bottom:14px;}
+
+  /* Task log buttons */
+  .task-list{display:flex; flex-direction:column; gap:8px; margin:4px 0 16px;}
+  .task-btn{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg-card); border:1px solid #23262e; color:var(--text);
+    padding:12px 14px; border-radius:12px; font-size:14px; cursor:pointer; text-align:left;
+  }
+  .task-btn:active{background:var(--bg-card-2);}
+  .task-btn .pts{
+    background:var(--bg-card-2); color:var(--accent); font-weight:700; font-size:12px;
+    padding:4px 9px; border-radius:999px; flex-shrink:0; margin-left:10px;
+  }
+
+  .logged-list{display:flex; flex-direction:column; gap:6px; margin:0 0 16px;}
+  .logged-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg-card-2); border-radius:10px; padding:8px 12px; font-size:13px;
+  }
+  .logged-row .rm{background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;padding:2px 6px;}
+  .logged-empty{color:var(--text-dim); font-size:13px; margin:0 0 16px;}
+
+  /* Bottom nav */
+  .navbar{
+    flex-shrink:0;
+    background:rgba(15,17,21,0.92); backdrop-filter:blur(10px);
+    border-top:1px solid #23262e;
+    display:flex; justify-content:space-around; padding:8px 6px calc(4px + env(safe-area-inset-bottom) * 0.4);
+  }
+  .nav-btn{background:none;border:none;color:var(--text-dim);font-size:10.5px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer; flex:1; min-width:0;}
+  .nav-btn .ic{font-size:18px;}
+  .nav-btn.active{color:var(--accent);}
+
+  /* Day log grid */
+  .day-grid{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+  .day-dot{
+    width:34px;height:34px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px; font-weight:600; cursor:pointer; color:#08201b;
+    background:var(--accent);
+  }
+  .day-dot.red{background:var(--danger); color:#2a0f0c;}
+  .day-dot.weekend{background:#20232b; color:var(--text-dim);}
+  .day-dot.selected{outline:2px solid var(--text); outline-offset:2px;}
+
+  .legend{display:flex; gap:16px; margin-top:10px; margin-bottom:12px; font-size:12px; color:var(--text-dim); flex-wrap:wrap;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  .day-editor{display:none;}
+  .day-editor.active{display:block;}
+
+  input[type=date], input[type=number], input[type=text]{
+    width:100%; background:var(--bg-card-2); border:1px solid #2a2f3a; color:var(--text);
+    padding:12px 14px; border-radius:12px; font-size:15px; margin:6px 0 16px;
+  }
+  label{font-size:13px; color:var(--text-dim);}
+
+  .why-intro{margin-bottom:20px;}
+  .why-intro p{font-size:18px; font-weight:700; margin:0 0 6px; line-height:1.4;}
+
+  .why-list{display:flex; flex-direction:column; gap:10px; margin-bottom:22px;}
+  .why-item{background:var(--bg-card); border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:14px;}
+  .why-icon{
+    font-size:20px; width:40px; height:40px; border-radius:12px;
+    background:var(--bg-card-2); display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .why-text-line{font-size:15px; line-height:1.4;}
+
+  .why-closing{
+    font-size:15px; font-style:italic; color:var(--accent); text-align:center;
+    line-height:1.6; padding:18px 6px 4px; border-top:1px solid #23262e; margin-top:4px;
+  }
+
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #23262e;}
+  .placeholder{text-align:center; margin-top:60px;}
+  .placeholder .big-icon{font-size:44px; margin-bottom:14px;}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="content">
+
+<!-- TA INCOME -->
+<div id="view-income" class="screen active">
+  <div class="topbar">
+    <button class="icon-btn" onclick="showView('settings')">&#9776;</button>
+    <div></div>
+  </div>
+  <div class="hero">
+    <div class="eyebrow">Grow</div>
+    <h1>TA Income</h1>
+    <div class="sub" id="quoteLine"></div>
+  </div>
+  <div class="points-ring" id="pointsRing">
+    <div class="num" id="todayPointsNum">0/100</div>
+    <div class="lbl">points today</div>
+  </div>
+
+  <div class="week-banner" id="weekBanner"></div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="val" id="statStreak">0</div><div class="lbl">Current streak</div></div>
+    <div class="stat-card"><div class="val" id="statLongest">0</div><div class="lbl">Longest streak</div></div>
+  </div>
+
+  <h3 style="margin-top:6px;">Log a task</h3>
+  <div class="task-list" id="taskList"></div>
+
+  <h3>Today's log</h3>
+  <div id="todayLog"></div>
+</div>
+
+<!-- NEW BUSINESS (placeholder) -->
+<div id="view-newbusiness" class="screen">
+  <div class="placeholder">
+    <div class="big-icon">&#128640;</div>
+    <h2>New Business</h2>
+    <p class="muted">Not set up yet — this tab is reserved for when you're ready to define it.</p>
+  </div>
+</div>
+
+<!-- NEW JOB (placeholder) -->
+<div id="view-newjob" class="screen">
+  <div class="placeholder">
+    <div class="big-icon">&#128188;</div>
+    <h2>New Job</h2>
+    <p class="muted">Not set up yet — this tab is reserved for when you're ready to define it.</p>
+  </div>
+</div>
+
+<!-- DAY LOG -->
+<div id="view-daylog" class="screen">
+  <h2>Day Log</h2>
+  <p class="muted" style="font-size:13px; margin:0 0 4px;">Weekdays turn green at 100+ points. Tap any day to view or add entries — weekends are shown but don't need to hit the target.</p>
+  <div class="day-grid" id="dayGrid"></div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--accent)"></i>100+ points</span>
+    <span><i class="dot" style="background:var(--danger)"></i>Under 100</span>
+    <span><i class="dot" style="background:#20232b"></i>Weekend</span>
+  </div>
+
+  <div id="dayEditor" class="day-editor">
+    <div class="card" id="dayEditorCard"></div>
+  </div>
+</div>
+
+<!-- WHY -->
+<div id="view-why" class="screen">
+  <h2>Why</h2>
+
+  <div class="why-list">
+    <div class="why-item">
+      <div class="why-icon">&#128663;</div>
+      <div class="why-text-line">I'll be able to get a new nice car</div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">&#127968;</div>
+      <div class="why-text-line">I'll be able to move into a new unit — solved with Sita</div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">&#10084;&#65039;</div>
+      <div class="why-text-line">I'll be relaxed enough to go see my mum</div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">&#9992;&#65039;</div>
+      <div class="why-text-line">I'll be able to go to Indonesia with Sita in December</div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">&#127908;</div>
+      <div class="why-text-line">I'll be relaxed enough to start singing lessons again</div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">&#127969;</div>
+      <div class="why-text-line">I'll probably be able to buy a new property in a few months</div>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">&#128176;</div>
+      <div class="why-text-line">I'll be able to save an extra $1,000 each week</div>
+    </div>
+  </div>
+
+  <div class="why-closing">Every marketing task today builds the income — and the life — I'm working toward.</div>
+</div>
+
+<!-- SETTINGS (hidden, reached via Income tab menu icon) -->
+<div id="view-settings" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" onclick="showView('income')">&#8592;</button>
+    <div></div>
+  </div>
+  <h2>Settings</h2>
+
+  <label>Tracking start date</label>
+  <input type="date" id="setStartDate">
+
+  <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+
+  <button class="btn btn-outline" style="margin-top:24px;" onclick="if(confirm('Reset all data? This cannot be undone.'))resetAll()">Reset all data</button>
+
+  <div class="muted" style="text-align:center; font-size:11px; margin-top:28px;">Build 2026-08-08-6</div>
+</div>
+
+</div><!-- /#content -->
+
+<!-- NAV -->
+<div class="navbar">
+  <button class="nav-btn" data-view="income" onclick="showView('income')"><span class="ic">&#128176;</span>TA Income</button>
+  <button class="nav-btn" data-view="newbusiness" onclick="showView('newbusiness')"><span class="ic">&#128640;</span>New Biz</button>
+  <button class="nav-btn" data-view="newjob" onclick="showView('newjob')"><span class="ic">&#128188;</span>New Job</button>
+  <button class="nav-btn" data-view="daylog" onclick="showView('daylog')"><span class="ic">&#128197;</span>Day Log</button>
+  <button class="nav-btn" data-view="why" onclick="showView('why')"><span class="ic">&#9825;</span>Why</button>
+</div>
+
+</div><!-- /#app -->
+
+<script>
+/* ---------- Task definitions ---------- */
+const TASKS = [
+  {id:'referrer_existing', label:'Text/meet existing referrer', points:20},
+  {id:'referrer_new', label:'Meet new referrer', points:20},
+  {id:'quote_followup', label:'Text/phone customer to follow up on a quote', points:20},
+  {id:'website_launch', label:'Launch new website/landing page', points:70},
+  {id:'bush_tele', label:'Publish Bush Tele article', points:100},
+  {id:'leaflets', label:'Distribute 100 leaflets', points:50},
+  {id:'text_other_services', label:'Text customer re: other services', points:15},
+  {id:'seo_system', label:'Complete website SEO system', points:50},
+  {id:'log_customer_data', label:'Log customer data point', points:10},
+  {id:'facebook', label:'Facebook post or ad', points:25},
+  {id:'mass_text', label:'Mass text 20+ customers', points:50},
+  {id:'phone_call', label:'Phone customer or partner', points:30},
+  {id:'handout_crosssell', label:'Handout + instant cross-sell', points:50}
+];
+const TASK_MAP = Object.fromEntries(TASKS.map(t => [t.id, t]));
+const DAILY_TARGET = 100;
+const WEEKLY_TARGET = 500;
+
+/* ---------- State ---------- */
+const DEFAULT_START_DATE = todayStrInit();
+function todayStrInit(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function loadState(){
+  return {
+    startDate: localStorage.getItem('ti_startDate') || DEFAULT_START_DATE,
+    entries: JSON.parse(localStorage.getItem('ti_entries') || '{}') // { 'YYYY-MM-DD': [taskId, taskId, ...] }
+  };
+}
+function saveState(s){
+  localStorage.setItem('ti_startDate', s.startDate);
+  localStorage.setItem('ti_entries', JSON.stringify(s.entries));
+}
+let state = loadState();
+if(!localStorage.getItem('ti_startDate')) saveState(state);
+
+let selectedDayEditor = null; // date string of currently expanded day editor, or null
+
+/* ---------- Date helpers ---------- */
+function todayStr(){ return todayStrInit(); }
+function parseDate(s){
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function fmtDate(s){
+  const [y,m,d] = s.split('-').map(Number);
+  return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+function addDays(dateStr, n){
+  const d = parseDate(dateStr);
+  d.setDate(d.getDate()+n);
+  return fmtDate(d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
+}
+function isWeekend(dateStr){
+  const day = parseDate(dateStr).getDay(); // 0 = Sun, 6 = Sat
+  return day === 0 || day === 6;
+}
+function allDays(){
+  const days = [];
+  const start = parseDate(state.startDate);
+  const end = parseDate(todayStr());
+  if(start > end) return days;
+  let cur = state.startDate;
+  while(true){
+    days.push(cur);
+    if(cur === todayStr()) break;
+    cur = addDays(cur, 1);
+  }
+  return days;
+}
+// Monday of the week containing dateStr
+function mondayOf(dateStr){
+  const d = parseDate(dateStr);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diff = (day === 0) ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return fmtDate(d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
+}
+
+/* ---------- Core calculations ---------- */
+function pointsForDate(dateStr){
+  const ids = state.entries[dateStr] || [];
+  return ids.reduce((sum, id) => sum + (TASK_MAP[id] ? TASK_MAP[id].points : 0), 0);
+}
+function weeklyTotal(referenceDate){
+  const monday = mondayOf(referenceDate);
+  let total = 0;
+  for(let i = 0; i < 7; i++){
+    total += pointsForDate(addDays(monday, i));
+  }
+  return total;
+}
+function computeStreaks(){
+  const days = allDays().filter(d => !isWeekend(d));
+  let current = 0, longest = 0, run = 0;
+  for(const d of days){
+    if(pointsForDate(d) >= DAILY_TARGET){ run++; longest = Math.max(longest, run); }
+    else run = 0;
+  }
+  // current streak: count back from the most recent weekday (today if weekday, else the streak simply reflects last logged weekdays)
+  for(let i = days.length - 1; i >= 0; i--){
+    if(pointsForDate(days[i]) >= DAILY_TARGET) current++;
+    else break;
+  }
+  return { current, longest };
+}
+
+/* ---------- Rendering ---------- */
+function render(){
+  const today = todayStr();
+  const todayPts = pointsForDate(today);
+  const pct = Math.min(100, Math.round((todayPts / DAILY_TARGET) * 100));
+
+  document.getElementById('quoteLine').textContent = currentQuote;
+  document.getElementById('todayPointsNum').textContent = todayPts + '/' + DAILY_TARGET;
+  document.getElementById('pointsRing').style.setProperty('--pct', pct);
+
+  const weekPts = weeklyTotal(today);
+  document.getElementById('weekBanner').innerHTML = `<span class="highlight">${weekPts}/${WEEKLY_TARGET}</span> this week`;
+
+  const streaks = computeStreaks();
+  document.getElementById('statStreak').textContent = streaks.current;
+  document.getElementById('statLongest').textContent = streaks.longest;
+
+  renderTaskList();
+  renderTodayLog();
+  renderDayGrid();
+  if(selectedDayEditor) renderDayEditor(selectedDayEditor);
+
+  document.getElementById('setStartDate').value = state.startDate;
+}
+
+function renderTaskList(){
+  const wrap = document.getElementById('taskList');
+  wrap.innerHTML = '';
+  TASKS.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'task-btn';
+    btn.innerHTML = `<span>${t.label}</span><span class="pts">+${t.points}</span>`;
+    btn.onclick = () => logTask(todayStr(), t.id);
+    wrap.appendChild(btn);
+  });
+}
+
+function renderTodayLog(){
+  renderLoggedList('todayLog', todayStr());
+}
+
+function renderLoggedList(containerId, dateStr){
+  const wrap = document.getElementById(containerId);
+  wrap.innerHTML = '';
+  const ids = state.entries[dateStr] || [];
+  if(ids.length === 0){
+    wrap.innerHTML = '<p class="logged-empty">Nothing logged yet.</p>';
+    return;
+  }
+  const list = document.createElement('div');
+  list.className = 'logged-list';
+  ids.forEach((id, idx) => {
+    const t = TASK_MAP[id];
+    if(!t) return;
+    const row = document.createElement('div');
+    row.className = 'logged-row';
+    row.innerHTML = `<span>${t.label} <span class="muted">+${t.points}</span></span>`;
+    const rm = document.createElement('button');
+    rm.className = 'rm';
+    rm.innerHTML = '&#10005;';
+    rm.onclick = () => removeEntry(dateStr, idx);
+    row.appendChild(rm);
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+}
+
+function renderDayGrid(){
+  const grid = document.getElementById('dayGrid');
+  grid.innerHTML = '';
+  const days = allDays();
+  days.forEach(d => {
+    const el = document.createElement('div');
+    const dt = parseDate(d);
+    let cls = 'day-dot';
+    if(isWeekend(d)) cls += ' weekend';
+    else cls += (pointsForDate(d) >= DAILY_TARGET) ? '' : ' red';
+    if(selectedDayEditor === d) cls += ' selected';
+    el.className = cls;
+    el.textContent = dt.getDate();
+    el.title = d;
+    el.onclick = () => toggleDayEditor(d);
+    grid.appendChild(el);
+  });
+}
+
+function toggleDayEditor(dateStr){
+  selectedDayEditor = (selectedDayEditor === dateStr) ? null : dateStr;
+  const editor = document.getElementById('dayEditor');
+  if(selectedDayEditor){
+    editor.classList.add('active');
+    renderDayEditor(selectedDayEditor);
+  } else {
+    editor.classList.remove('active');
+  }
+  renderDayGrid();
+}
+
+function renderDayEditor(dateStr){
+  const card = document.getElementById('dayEditorCard');
+  const pts = pointsForDate(dateStr);
+  const dateLabel = parseDate(dateStr).toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
+  let html = `<h3 style="margin-bottom:2px;">${dateLabel}</h3>`;
+  html += `<p class="muted" style="font-size:13px; margin:0 0 10px;">${pts} point${pts===1?'':'s'} logged${isWeekend(dateStr) ? ' (weekend — no target)' : (pts >= DAILY_TARGET ? ' — target hit' : '')}</p>`;
+  card.innerHTML = html;
+
+  const taskWrap = document.createElement('div');
+  taskWrap.className = 'task-list';
+  TASKS.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'task-btn';
+    btn.innerHTML = `<span>${t.label}</span><span class="pts">+${t.points}</span>`;
+    btn.onclick = () => logTask(dateStr, t.id);
+    taskWrap.appendChild(btn);
+  });
+  card.appendChild(taskWrap);
+
+  const loggedDiv = document.createElement('div');
+  loggedDiv.id = 'dayEditorLogged';
+  card.appendChild(loggedDiv);
+  renderLoggedList('dayEditorLogged', dateStr);
+}
+
+/* ---------- Actions ---------- */
+function logTask(dateStr, taskId){
+  if(!state.entries[dateStr]) state.entries[dateStr] = [];
+  state.entries[dateStr].push(taskId);
+  saveState(state);
+  render();
+}
+function removeEntry(dateStr, idx){
+  if(!state.entries[dateStr]) return;
+  state.entries[dateStr].splice(idx, 1);
+  if(state.entries[dateStr].length === 0) delete state.entries[dateStr];
+  saveState(state);
+  render();
+}
+function resetAll(){
+  localStorage.removeItem('ti_startDate');
+  localStorage.removeItem('ti_entries');
+  state = loadState();
+  saveState(state);
+  selectedDayEditor = null;
+  render();
+  showView('income');
+}
+function saveSettings(){
+  const sd = document.getElementById('setStartDate').value;
+  if(sd) state.startDate = sd;
+  saveState(state);
+  render();
+  showView('income');
+}
+
+/* ---------- Navigation ---------- */
+function showView(name){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view===name));
+  document.getElementById('content').scrollTop = 0;
+  if(typeof setAppHeight === 'function') setAppHeight();
+}
+
+/* ---------- Viewport height fix (iOS home-screen apps) ---------- */
+function setAppHeight(){
+  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', h + 'px');
+}
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', setAppHeight);
+window.addEventListener('pageshow', setAppHeight);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) setAppHeight(); });
+if(window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+setAppHeight();
+setTimeout(setAppHeight, 300);
+setTimeout(setAppHeight, 800);
+
+/* ---------- Motivational quote (picked once per app load) ---------- */
+const QUOTES = [
+  "Inaction breeds doubt and fear. Action breeds confidence and courage.",
+  "You don't have to be great to start, but you have to start to be great.",
+  "The secret of getting ahead is getting started.",
+  "You miss 100% of the shots you don't take.",
+  "The risk of a wrong decision is preferable to the terror of indecision.",
+  "Opportunities don't happen. You create them.",
+  "It's never too late to be what you might have been.",
+  "Life shrinks or expands in proportion to one's courage.",
+  "A ship in harbor is safe, but that is not what ships are built for.",
+  "Don't be afraid to give up the good to go for the great.",
+  "You don't need to see the whole staircase, just take the first step.",
+  "Doubt kills more dreams than failure ever will.",
+  "If opportunity doesn't knock, build a door.",
+  "It always seems impossible until it's done.",
+  "The future depends on what you do today.",
+  "It's not lack of resources that's the problem, it's a lack of resourcefulness.",
+  "Your best moments are on the other side of your fears."
+];
+const currentQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+
+/* ---------- Init ---------- */
+render();
+</script>
+</body>
+</html>
